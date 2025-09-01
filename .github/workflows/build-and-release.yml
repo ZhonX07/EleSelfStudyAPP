@@ -1,9 +1,9 @@
-name: Build and Release (Windows)
+name: Build and Release (Windows Only)
 
 on:
   push:
     tags:
-      - 'v*'  # 只有推送 v 开头的 tag 才触发
+      - 'v*'  # 推送 v 开头标签触发
 
 permissions:
   contents: write
@@ -12,75 +12,78 @@ jobs:
   build-and-release:
     runs-on: windows-latest
 
+    env:
+      GITHUB_TOKEN: ${{ secrets.Token }}  # 你的 Personal Access Token
+
     steps:
+      # 1️⃣ 拉取代码
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ 安装 Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      # 3️⃣ 安装 pnpm
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: latest
           run_install: false
 
+      # 4️⃣ 获取 pnpm store 路径
       - name: Get pnpm store directory
-        id: pnpm-cache
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-        shell: bash
+        shell: pwsh
 
+      # 5️⃣ 缓存 pnpm
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: windows-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            windows-pnpm-store-
 
+      # 6️⃣ 安装依赖
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build application
+      # 7️⃣ 构建应用
+      - name: Build Windows application
         run: pnpm run build:win
-        env:
-          GH_TOKEN: ${{ secrets.Token }}   # 给 electron-builder 用
 
+      # 8️⃣ 创建 Release（Draft）
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.Token }}   # PAT，用于创建 release
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
           draft: true
           prerelease: false
 
+      # 9️⃣ 上传构建产物
       - name: Upload release artifact
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.Token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/selfstu-vue\ Setup\ 1.0.1.exe   # 确认 exe 名称
-          asset_name: selfstu-vue\ Setup\ 1.0.1.exe
+          asset_path: dist/*.exe
+          asset_name: selfstu-vue-Setup-${{ github.ref_name }}.exe
           asset_content_type: application/octet-stream
 
+      # 🔟 发布 Release
       - name: Publish Release
         uses: actions/github-script@v7
-        env:
-          RELEASE_ID: ${{ steps.create_release.outputs.id }}
-          GITHUB_TOKEN: ${{ secrets.Token }}
         with:
           github-token: ${{ secrets.Token }}
           script: |
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              release_id: parseInt(process.env.RELEASE_ID),
+              release_id: parseInt('${{ steps.create_release.outputs.id }}'),
               draft: false
             });
             console.log('Release published successfully!');
