@@ -15,8 +15,33 @@
           </button>
         </div>
         <div class="help-content">
-          <p>这里是帮助内容，稍后可以自定义。</p>
-          <p>您可以在这里添加使用说明、常见问题解答或联系信息。</p>
+          <p>需要定制自习软件或有问题/建议反馈请加好友（优先钉钉）</p>
+          
+          <!-- 标签页 -->
+          <div class="tabs">
+            <div class="tab-header">
+              <button 
+                :class="['tab-btn', { active: activeTab === 'dingtalk' }]" 
+                @click="activeTab = 'dingtalk'"
+              >
+                钉钉
+              </button>
+              <button 
+                :class="['tab-btn', { active: activeTab === 'wechat' }]" 
+                @click="activeTab = 'wechat'"
+              >
+                微信
+              </button>
+            </div>
+            <div class="tab-content">
+              <div v-if="activeTab === 'dingtalk'" class="tab-pane">
+                <img :src="dingTalkQR" alt="钉钉二维码" class="qr-code" />
+              </div>
+              <div v-if="activeTab === 'wechat'" class="tab-pane">
+                <img :src="weChatQR" alt="微信二维码" class="qr-code" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -25,8 +50,12 @@
 
 <script setup>
 import { ref } from 'vue'
+// 修正图片导入路径
+import dingTalkQR from '../assets/Friend_DingTalk.jpg'
+import weChatQR from '../assets/Friend_WeChat.jpg'
 
 const showHelp = ref(false)
+const activeTab = ref('dingtalk') // 默认显示钉钉标签
 
 const closeOnOverlay = (e) => {
   if (e.target === e.currentTarget) {
@@ -145,8 +174,54 @@ const closeOnOverlay = (e) => {
   margin: 0 0 16px 0;
 }
 
-.help-content p:last-child {
-  margin-bottom: 0;
+/* 标签页样式 */
+.tabs {
+  margin-top: 10px;
+}
+
+.tab-header {
+  display: flex;
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-weight: 500;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  color: #17a2b8;
+  border-bottom: 2px solid #17a2b8;
+}
+
+.tab-btn:hover:not(.active) {
+  color: #333;
+  background-color: #f8f9fa;
+}
+
+.tab-content {
+  min-height: 200px;
+}
+
+.tab-pane {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.qr-code {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
@@ -166,6 +241,16 @@ const closeOnOverlay = (e) => {
   
   .help-content {
     padding: 16px 20px 20px;
+  }
+
+  .tab-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  .qr-code {
+    max-width: 150px;
+    max-height: 150px;
   }
 }
 </style>
