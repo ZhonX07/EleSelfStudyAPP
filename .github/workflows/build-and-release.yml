@@ -1,27 +1,18 @@
-name: Build and Release
+name: Release Electron App
 
 on:
   push:
     tags:
-      - 'v*'  # 当推送标签为v开头时触发，如v1.0.0
-
-permissions:
-  contents: write
+      - 'v*' # 只在打 tag 的时候触发，比如 v1.0.0
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
-      upload_url: ${{ steps.create-release.outputs.upload_url }}
-    
+      release_id: ${{ fromJSON(steps.create-release.outputs.result).id }}
+      upload_url: ${{ fromJSON(steps.create-release.outputs.result).upload_url }}
     steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Create Release
+      - name: Create GitHub Release
         id: create-release
         uses: actions/github-script@v7
         with:
@@ -32,71 +23,45 @@ jobs:
               repo: context.repo.repo,
               tag_name: context.ref.replace('refs/tags/', ''),
               name: context.ref.replace('refs/tags/', ''),
-              draft: true,
-              generate_release_notes: true
+              draft: false,
+              prerelease: false
             });
-            return {
-              result: data.id,
-              upload_url: data.upload_url
-            }
+            return { id: data.id, upload_url: data.upload_url };
 
   build:
     needs: create-release
     strategy:
-      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
         include:
           - os: windows-latest
-            build_command: build:win
-            artifact_name: win
+            build_script: build:win
             artifact_path: dist/*.exe
           - os: macos-latest
-            build_command: build:mac
-            artifact_name: mac
+            build_script: build:mac
             artifact_path: dist/*.dmg
           - os: ubuntu-latest
-            build_command: build:linux
-            artifact_name: linux
+            build_script: build:linux
             artifact_path: dist/*.AppImage
-
     runs-on: ${{ matrix.os }}
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-      
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: latest
-          run_install: false
-      
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-        shell: bash
-      
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-      
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Install dependencies
-        run: pnpm install
-      
-      - name: Build application
-        run: pnpm run ${{ matrix.build_command }}
-      
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron app
+        run: pnpm ${{ matrix.build_script }}
+
       - name: Upload artifacts to release
         uses: actions/github-script@v7
         env:
@@ -105,15 +70,18 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs').promises;
-            const { globby } = await import('globby');
             const path = require('path');
-            
-            const artifacts = await globby(['${{ matrix.artifact_path }}']);
-            
-            for (const artifactPath of artifacts) {
-              const filename = path.basename(artifactPath);
+
+            const dir = path.dirname('${{ matrix.artifact_path }}');
+            const ext = path.extname('${{ matrix.artifact_path }}');
+
+            const files = await fs.readdir(dir);
+            const artifacts = files.filter(f => f.endsWith(ext));
+
+            for (const filename of artifacts) {
+              const artifactPath = path.join(dir, filename);
               const fileBytes = await fs.readFile(artifactPath);
-              
+
               await github.rest.repos.uploadReleaseAsset({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -121,31 +89,6 @@ jobs:
                 name: filename,
                 data: fileBytes
               });
-              
-              console.log(`Uploaded ${filename} to release`);
+
+              console.log(`✅ Uploaded ${filename} to release`);
             }
-
-  publish-release:
-    needs: [create-release, build]
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Publish Release
-        uses: actions/github-script@v7
-        env:
-          RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: process.env.RELEASE_ID,
-              draft: false
-            });
-            console.log('Release published successfully!');
