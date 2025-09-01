@@ -24,7 +24,6 @@ const openSubject = (subject) => {
     if (subject === '数学') {
       currentView.value = 'math'
     }
-    // 这里将来会导航到对应的学科页面
   }
 }
 

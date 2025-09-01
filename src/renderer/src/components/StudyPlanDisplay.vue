@@ -44,18 +44,12 @@ const handleFileSelect = (event) => {
 const processRichText = (text) => {
   if (!text) return ''
   
-  let processed = text
-    // 处理加粗文本 **text**
+  let processed = Text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // 处理斜体文本 *text*
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    // 处理红色文本 [r]text[/r]
     .replace(/\[r\](.*?)\[\/r\]/g, '<span class="red-text">$1</span>')
-    // 处理二级标题 ## text
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-    // 处理换行符
     .replace(/<br>/g, '<br>')
-    // 处理普通换行
     .replace(/\n/g, '<br>')
   
   return processed

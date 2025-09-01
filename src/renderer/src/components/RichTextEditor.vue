@@ -64,10 +64,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 
-// 定义事件
 defineEmits(['go-home'])
 
-// 响应式数据
 const editor = ref(null)
 const activeFormats = reactive({
   bold: false,
@@ -78,13 +76,11 @@ const activeFormats = reactive({
 
 let activeFormat = null
 
-// 挂载后初始化
 onMounted(() => {
   editor.value.focus()
   document.addEventListener('selectionchange', updateButtonStates)
 })
 
-// 格式化功能
 const toggleBold = () => {
   if (activeFormat === 'bold') {
     activeFormats.bold = false
@@ -226,7 +222,6 @@ const handleKeydown = (e) => {
       toggleItalic()
     }
   } else if (e.key === 'Enter') {
-    // 处理回车键，确保正确换行
     if (!e.shiftKey) {
       // 普通回车键，插入 <br> 标签
       e.preventDefault()
