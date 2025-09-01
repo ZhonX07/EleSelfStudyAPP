@@ -8,13 +8,21 @@
       style="display: none"
     >
     
-    <div v-if="!content" class="empty-state">
-      <div class="upload-icon">📄</div>
-      <h3>点击选择自习安排文件</h3>
-      <p>请选择一个 .txt 文件来显示自习安排</p>
-    </div>
+    <transition name="content-fade" mode="out-in">
+      <div v-if="!content" key="empty" class="empty-state">
+        <div class="upload-icon">📄</div>
+        <h3>点击选择自习安排文件</h3>
+        <p>请选择一个 .txt 文件来显示自习安排</p>
+        <div class="drag-hint">点击或拖拽文件到这里</div>
+      </div>
+      
+      <div v-else key="content" class="content-display" v-html="processedContent"></div>
+    </transition>
     
-    <div v-else class="content-display" v-html="processedContent"></div>
+    <!-- 上传动画 -->
+    <div class="upload-animation" v-if="isUploading">
+      <div class="upload-progress"></div>
+    </div>
   </div>
 </template>
 
@@ -24,6 +32,7 @@ import { ref } from 'vue'
 const fileInput = ref(null)
 const content = ref('')
 const processedContent = ref('')
+const isUploading = ref(false)
 
 const selectFile = () => {
   fileInput.value.click()
@@ -32,19 +41,25 @@ const selectFile = () => {
 const handleFileSelect = (event) => {
   const file = event.target.files[0]
   if (file && file.type === 'text/plain') {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      content.value = e.target.result
-      processedContent.value = processRichText(content.value)
-    }
-    reader.readAsText(file, 'utf-8')
+    isUploading.value = true
+    
+    // 模拟文件处理延迟，创建更好的视觉反馈
+    setTimeout(() => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        content.value = e.target.result
+        processedContent.value = processRichText(content.value)
+        isUploading.value = false
+      }
+      reader.readAsText(file, 'utf-8')
+    }, 800)
   }
 }
 
 const processRichText = (text) => {
   if (!text) return ''
   
-  let processed = Text
+  let processed = text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\[r\](.*?)\[\/r\]/g, '<span class="red-text">$1</span>')
@@ -70,14 +85,26 @@ const processRichText = (text) => {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   overflow-y: auto;
   z-index: 50;
+  animation: appear 0.6s ease-out;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .study-plan-display:hover {
   transform: translate(-50%, -50%) scale(1.02);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4);
 }
 
 .empty-state {
@@ -88,12 +115,28 @@ const processRichText = (text) => {
   height: 100%;
   text-align: center;
   color: #666;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .upload-icon {
   font-size: 5rem;
   margin-bottom: 20px;
   opacity: 0.7;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .empty-state h3 {
@@ -105,6 +148,22 @@ const processRichText = (text) => {
 .empty-state p {
   font-size: 1.1rem;
   opacity: 0.8;
+  margin-bottom: 20px;
+}
+
+.drag-hint {
+  padding: 12px 24px;
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #888;
+  margin-top: 15px;
+  transition: all 0.3s ease;
+}
+
+.study-plan-display:hover .drag-hint {
+  border-color: #17a2b8;
+  color: #17a2b8;
 }
 
 .content-display {
@@ -112,6 +171,48 @@ const processRichText = (text) => {
   line-height: 1.6;
   color: #333;
   word-wrap: break-word;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 内容切换动画 */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.content-fade-enter-from,
+.content-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* 上传动画 */
+.upload-animation {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: rgba(23, 162, 184, 0.2);
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
+}
+
+.upload-progress {
+  height: 100%;
+  width: 100%;
+  background: #17a2b8;
+  animation: loading 1.5s infinite linear;
+  transform-origin: 0% 50%;
+}
+
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 :deep(.red-text) {

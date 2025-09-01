@@ -39,57 +39,63 @@ const goHome = () => {
 <template>
   <div class="app-container">
     <HelpButton />
-    <!-- 首页 -->
-    <div v-if="currentView === 'home'">
-      <header class="header">
-        <h1 class="title">自习课学习助手</h1>
-        <p class="subtitle">选择学科开始学习</p>
-      </header>
+    <!-- 使用 transition 组件添加页面过渡效果 -->
+    <transition name="fade-slide" mode="out-in">
+      <!-- 首页 -->
+      <div v-if="currentView === 'home'" key="home">
+        <header class="header animate-in">
+          <h1 class="title">自习课学习助手</h1>
+          <p class="subtitle">选择学科开始学习</p>
+        </header>
 
-      <main class="main-content">
-        <section class="subjects-section">
-          <h2 class="section-title">学科入口</h2>
-          <div class="subjects-grid">
-            <div 
-              v-for="subject in subjects" 
-              :key="subject.name"
-              class="subject-card"
-              :class="{ disabled: !subject.enabled }"
-              :style="{ '--subject-color': subject.color }"
-              @click="openSubject(subject.name)"
-            >
-              <div class="subject-icon">{{ subject.icon }}</div>
-              <div class="subject-name">{{ subject.name }}</div>
-              <div v-if="!subject.enabled" class="disabled-overlay">
-                <div class="disabled-icon">🚫</div>
-                <div class="disabled-text">功能开发中</div>
+        <main class="main-content">
+          <section class="subjects-section animate-in" style="--delay: 0.2s">
+            <h2 class="section-title">学科入口</h2>
+            <div class="subjects-grid">
+              <div 
+                v-for="(subject, index) in subjects" 
+                :key="subject.name"
+                class="subject-card animate-in"
+                :style="{ 
+                  '--subject-color': subject.color,
+                  '--delay': `${0.3 + index * 0.05}s` 
+                }"
+                :class="{ disabled: !subject.enabled }"
+                @click="openSubject(subject.name)"
+              >
+                <div class="subject-icon">{{ subject.icon }}</div>
+                <div class="subject-name">{{ subject.name }}</div>
+                <div v-if="!subject.enabled" class="disabled-overlay">
+                  <div class="disabled-icon">🚫</div>
+                  <div class="disabled-text">功能开发中</div>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section class="tools-section">
-          <h2 class="section-title">学习工具</h2>
-          <div class="tool-card" @click="openScheduleGenerator">
-            <div class="tool-icon">📅</div>
-            <div class="tool-info">
-              <h3 class="tool-title">自习安排生成器</h3>
-              <p class="tool-description">可视化界面辅助生成自习安排</p>
+          <section class="tools-section animate-in" style="--delay: 0.5s">
+            <h2 class="section-title">学习工具</h2>
+            <div class="tool-card" @click="openScheduleGenerator">
+              <div class="tool-icon">📅</div>
+              <div class="tool-info">
+                <h3 class="tool-title">自习安排生成器</h3>
+                <p class="tool-description">可视化界面辅助生成自习安排</p>
+              </div>
             </div>
-          </div>
-        </section>
-      </main>
-    </div>
+          </section>
+        </main>
+      </div>
 
-    <!-- 富文本编辑器页面 -->
-    <div v-else-if="currentView === 'editor'">
-      <RichTextEditor @go-home="goHome" />
-    </div>
+      <!-- 富文本编辑器页面 -->
+      <div v-else-if="currentView === 'editor'" key="editor">
+        <RichTextEditor @go-home="goHome" />
+      </div>
 
-    <!-- 数学自习页面 -->
-    <div v-else-if="currentView === 'math'">
-      <MathSelfStudy @go-home="goHome" />
-    </div>
+      <!-- 数学自习页面 -->
+      <div v-else-if="currentView === 'math'" key="math">
+        <MathSelfStudy @go-home="goHome" />
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -277,6 +283,76 @@ const goHome = () => {
   color: white;
   font-size: 0.9rem;
   font-weight: bold;
+}
+
+/* 页面过渡动画 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.4s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-30px);
+}
+
+/* 逐个元素入场动画 */
+.animate-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.6s ease forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 增强按钮交互效果 */
+.subject-card {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.subject-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.subject-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.tool-card {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tool-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.tool-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.subject-icon {
+  transition: transform 0.3s ease;
+}
+
+.subject-card:hover .subject-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 @media (max-width: 768px) {

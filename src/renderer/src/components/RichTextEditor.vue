@@ -242,6 +242,12 @@ const handleKeydown = (e) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 :root {
@@ -270,6 +276,19 @@ const handleKeydown = (e) => {
   overflow: hidden;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #333;
+  animation: slideUp 0.6s ease-out;
+  transform-origin: center;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 header {
@@ -336,19 +355,57 @@ header {
   border-radius: var(--border-radius);
   padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   font-size: 14px;
   min-width: 40px;
+  position: relative;
+  overflow: hidden;
 }
 
 #toolbar button:hover {
   background: #e9ecef;
+  transform: translateY(-2px);
+}
+
+#toolbar button:active {
+  transform: translateY(0) scale(0.95);
+}
+
+#toolbar button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+
+#toolbar button:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(20, 20);
+    opacity: 0;
+  }
 }
 
 #toolbar button.active {
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(74, 110, 224, 0.3);
 }
 
 #toolbar button i {
@@ -373,6 +430,7 @@ header {
 #editor:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 0.2rem rgba(74, 110, 224, 0.25);
+  animation: cursorBlink 1s infinite;
 }
 
 #editor:empty:before {
@@ -429,7 +487,9 @@ footer {
 
 .export-btn:hover {
   background: var(--success-color) !important;
-  color: rgb(36, 126, 0) !important;
+  color: white !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 15px rgba(40, 167, 69, 0.3) !important;
 }
 
 .clear-btn {
@@ -441,36 +501,14 @@ footer {
 
 .clear-btn:hover {
   background: var(--danger-color) !important;
-  color: rgb(255, 0, 0) !important;
+  color: white !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 15px rgba(220, 53, 69, 0.3) !important;
 }
 
-@media (max-width: 768px) {
-  .header-controls {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .header-content {
-    order: -1;
-  }
-  
-  #toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .tool-group {
-    border-right: none;
-    border-bottom: 1px solid #000000;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-    width: 100%;
-  }
-  
-  .tool-group:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-  }
+/* 编辑器光标闪烁动画 */
+@keyframes cursorBlink {
+  0%, 100% { border-color: rgba(74, 110, 224, 0.5); }
+  50% { border-color: rgba(74, 110, 224, 1); }
 }
 </style>
